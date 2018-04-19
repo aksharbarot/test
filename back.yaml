@@ -1,0 +1,57 @@
+---
+- name: VNC for CENTOS 7
+  hosts: all
+#  remote_user: administrator
+#  become: true
+#  become_method: sudo
+  gather_facts: no
+  tasks:
+
+
+
+    - name: install the 'Gnome desktop' environment group
+      shell: yum groupinstall "GNOME Desktop" -y
+
+    - name: Install tiger VNC
+      shell: yum install tigervnc-server -y
+
+    - name: Copy file
+      copy:
+        src: '/home/administrator/vncserver@:1.service'
+        dest: '/etc/systemd/system/vncserver@:1.service'
+        owner: root
+        group: root
+        mode: 0644
+
+#    - name: Allow http/https
+#      command: sudo firewall-cmd --permanent --zone=public --add-service vnc-server
+
+#    - name: Allow http/https
+#      command: sudo firewall-cmd --reload
+
+    - name: VNC | add VNC_5901 iptable rule
+      command: /sbin/iptables -I INPUT 1 -p tcp --dport 5901 -j ACCEPT
+
+
+    - file:
+        path: /home/administrator/.vnc/
+        state: directory
+        mode: 0755
+        owner: administrator
+        group: administrator
+
+    - name: echo pass
+      shell: |
+         echo admin123 | vncpasswd -f > /home/administrator/.vnc/passwd
+
+
+    - name: change ownership
+      shell: chown administrator:administrator /home/administrator/.vnc/passwd
+    - name: Reload Daemon
+      command: systemctl daemon-reload
+
+    - name: Enable during boot
+      command: sudo systemctl enable vncserver@:1.service
+
+    - name: Restart service
+      command: sudo systemctl restart vncserver@:1.service
